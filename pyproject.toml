@@ -7,13 +7,13 @@ name = "pipecat-gmicloud"
 version = "0.1.0"
 description = "Pipecat text-to-speech service for GMI Cloud's multimodal inference engine (Inworld TTS, MiniMax TTS, Chatterbox and more)."
 readme = "README.md"
-license = { text = "BSD-2-Clause" }
+license = "BSD-2-Clause"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "Jayanng" }]
 keywords = ["pipecat", "tts", "text-to-speech", "voice", "gmi-cloud", "inworld", "minimax"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]

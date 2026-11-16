@@ -34,10 +34,11 @@ resolves both synchronous and queued responses.
 | `elevenlabs-tts-v3` | ElevenLabs | 70+ languages, expressive | ⛔ catalog `available: false` (HTTP 404) |
 | `elevenlabs-tts-multilingual-v2` | ElevenLabs | Multilingual with voice cloning | ⛔ catalog `available: false` (HTTP 404) |
 
-**14 of 17 produced real audio live.** Chatterbox works when you pass your own
-Resemble voice UUID (`settings.voice`); the two ElevenLabs entries are listed
-in GMI's catalog but not serving today. Any GMI audio model id works through
-the `model` setting.
+**14 of 17 produced real audio live.** Chatterbox requires a Resemble voice
+UUID (`settings.voice`): our live probe with a placeholder UUID was rejected
+with HTTP 400, so a completed call needs your own Resemble voice. The two
+ElevenLabs entries are listed in GMI's catalog but not serving today. Any GMI
+audio model id works through the `model` setting.
 
 ## Installation
 
