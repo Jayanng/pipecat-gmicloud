@@ -12,8 +12,13 @@ variable.
 
 Usage:
 
-    $ uv pip install -e .
-    $ GMI_CLOUD_API_KEY=... python scripts/verify_live.py
+    $ GMI_CLOUD_API_KEY=... python scripts/verify_live.py [output.wav] [model] [voice]
+
+Examples:
+
+    $ python scripts/verify_live.py verify_live.wav
+    $ python scripts/verify_live.py minimax.wav minimax-tts-speech-2.8-turbo
+    $ python scripts/verify_live.py inworld.wav inworld-tts-2-flash
 """
 
 import asyncio
@@ -30,20 +35,24 @@ from pipecat_gmicloud import GmicloudTTSService
 
 async def main() -> int:
     api_key = os.environ["GMI_CLOUD_API_KEY"]
+    out_path = sys.argv[1] if len(sys.argv) > 1 else "verify_live.wav"
+    model = sys.argv[2] if len(sys.argv) > 2 else "inworld-tts-2"
+    voice = sys.argv[3] if len(sys.argv) > 3 else None
+
     text = (
         "Live verification for the pipecat GMI Cloud integration. "
         "This audio was synthesized by the Gmicloud TTS service."
     )
-    out_path = sys.argv[1] if len(sys.argv) > 1 else "verify_live.wav"
+
+    settings_kwargs = {"model": model}
+    if voice:
+        settings_kwargs["voice"] = voice
 
     async with aiohttp.ClientSession() as session:
         tts = GmicloudTTSService(
             api_key=api_key,
             aiohttp_session=session,
-            settings=GmicloudTTSService.Settings(
-                model="inworld-tts-2",
-                voice="Dennis",
-            ),
+            settings=GmicloudTTSService.Settings(**settings_kwargs),
         )
 
         sample_rate = None
@@ -71,7 +80,7 @@ async def main() -> int:
             wav.setframerate(sample_rate)
             wav.writeframes(audio)
 
-        print(f"OK: {len(chunks)} frames, {len(audio)} PCM bytes")
+        print(f"OK [{model}]: {len(chunks)} frames, {len(audio)} PCM bytes")
         print(f"OK: sample_rate={sample_rate} channels={channels}")
         print(f"OK: wrote {out_path}")
         return 0

@@ -1,0 +1,165 @@
+[
+ {
+  "model": "inworld-tts-2",
+  "http": 200,
+  "status": "success",
+  "request_id": "6189caa6-ed05-4a90-8d0e-a962b57b815c",
+  "audio_url": true,
+  "usage": {
+   "model_id": "inworld-tts-2",
+   "processed_characters": 44
+  },
+  "bytes": 274604,
+  "duration_s": "2.860000"
+ },
+ {
+  "model": "inworld-tts-2-flash",
+  "http": 200,
+  "status": "success",
+  "request_id": "e1338b9f-0515-4219-aa1e-96e2ea21d0d6",
+  "audio_url": true,
+  "usage": {
+   "model_id": "inworld-tts-2-flash",
+   "processed_characters": 44
+  },
+  "bytes": 341804,
+  "duration_s": "3.560000"
+ },
+ {
+  "model": "inworld-tts-1.5-mini",
+  "http": 200,
+  "status": "success",
+  "request_id": "9c2ad96f-8aa7-4e55-a0c4-ccd0a6aaa55e",
+  "audio_url": true,
+  "usage": {
+   "model_id": "inworld-tts-1.5-mini",
+   "processed_characters": 44
+  },
+  "bytes": 286124,
+  "duration_s": "2.980000"
+ },
+ {
+  "model": "inworld-tts-1.5-max",
+  "http": 200,
+  "status": "success",
+  "request_id": "d8ace832-00d2-4255-9cd1-fa3dcf89dc19",
+  "audio_url": true,
+  "usage": {
+   "model_id": "inworld-tts-1.5-max",
+   "processed_characters": 44
+  },
+  "bytes": 288044,
+  "duration_s": "3.000000"
+ },
+ {
+  "model": "minimax-tts-speech-2.8-turbo",
+  "http": 200,
+  "status": "success",
+  "request_id": "d75f6872-0311-4cde-b9a3-7ae8e7ed63ec",
+  "audio_url": true,
+  "bytes": 420240,
+  "duration_s": "3.274031"
+ },
+ {
+  "model": "minimax-tts-speech-2.8-hd",
+  "http": 200,
+  "status": "success",
+  "request_id": "cfe2bcfc-012d-4c87-9b03-f989b5a4e9a2",
+  "audio_url": true,
+  "bytes": 399436,
+  "duration_s": "3.111500"
+ },
+ {
+  "model": "minimax-tts-speech-2.6-turbo",
+  "http": 200,
+  "status": "success",
+  "request_id": "a9e1b2ef-67dd-4da7-a624-cfdfdd76052c",
+  "audio_url": true,
+  "bytes": 383088,
+  "duration_s": "2.983781"
+ },
+ {
+  "model": "minimax-tts-speech-2.6-hd",
+  "http": 200,
+  "status": "success",
+  "request_id": "c37547b0-e575-4f4c-b6ff-afa6397a338c",
+  "audio_url": true,
+  "bytes": 393492,
+  "duration_s": "3.065063"
+ },
+ {
+  "model": "minimax-tts-speech-2.5-hd-preview",
+  "http": 200,
+  "status": "success",
+  "request_id": "62a70b87-5d2c-48f3-9b68-7c57dbe61ef3",
+  "audio_url": true,
+  "bytes": 387548,
+  "duration_s": "3.018625"
+ },
+ {
+  "model": "minimax-tts-speech-2.5-turbo-preview",
+  "http": 200,
+  "status": "success",
+  "request_id": "a8bd1716-5de6-4393-8f80-1e3de819d396",
+  "audio_url": true,
+  "bytes": 387548,
+  "duration_s": "3.018625"
+ },
+ {
+  "model": "minimax-tts-speech-02-hd",
+  "http": 200,
+  "status": "success",
+  "request_id": "20309fe4-3627-4f52-a7a4-615d9bee617d",
+  "audio_url": true,
+  "bytes": 409836,
+  "duration_s": "3.192750"
+ },
+ {
+  "model": "minimax-tts-speech-02-turbo",
+  "http": 200,
+  "status": "success",
+  "request_id": "b16c5328-3681-498a-a9f2-ee6f0d5aa177",
+  "audio_url": true,
+  "bytes": 371200,
+  "duration_s": "2.890906"
+ },
+ {
+  "model": "minimax-tts-speech-01-hd",
+  "http": 200,
+  "status": "success",
+  "request_id": "ad73110c-e948-416d-8c94-de00f0a6aa71",
+  "audio_url": true,
+  "bytes": 334048,
+  "duration_s": "2.600656"
+ },
+ {
+  "model": "minimax-tts-speech-01-turbo",
+  "http": 200,
+  "status": "success",
+  "request_id": "99aaba24-9a98-482d-84b8-33254dfa5664",
+  "audio_url": true,
+  "bytes": 350396,
+  "duration_s": "2.728375"
+ },
+ {
+  "model": "Chatterbox-tts",
+  "http": 400,
+  "status": null,
+  "request_id": null,
+  "audio_url": false
+ },
+ {
+  "model": "elevenlabs-tts-v3",
+  "http": 404,
+  "status": null,
+  "request_id": null,
+  "audio_url": false
+ },
+ {
+  "model": "elevenlabs-tts-multilingual-v2",
+  "http": 404,
+  "status": null,
+  "request_id": null,
+  "audio_url": false
+ }
+]
