@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: BSD 2-Clause License
 #
 
-"""Live verification harness for GmicloudTTSService.
+"""Live verification harness for GmicloudHttpTTSService.
 
 Runs the adapter end to end against the live GMI Cloud API and writes the
 synthesized speech to a WAV file. Requires the GMI_CLOUD_API_KEY environment
@@ -30,7 +30,7 @@ import aiohttp
 
 from pipecat.frames.frames import ErrorFrame, TTSAudioRawFrame
 
-from pipecat_gmicloud import GmicloudTTSService
+from pipecat_gmicloud import GmicloudHttpTTSService
 
 
 async def main() -> int:
@@ -49,10 +49,10 @@ async def main() -> int:
         settings_kwargs["voice"] = voice
 
     async with aiohttp.ClientSession() as session:
-        tts = GmicloudTTSService(
+        tts = GmicloudHttpTTSService(
             api_key=api_key,
             aiohttp_session=session,
-            settings=GmicloudTTSService.Settings(**settings_kwargs),
+            settings=GmicloudHttpTTSService.Settings(**settings_kwargs),
         )
 
         sample_rate = None

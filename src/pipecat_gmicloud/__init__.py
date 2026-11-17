@@ -6,6 +6,10 @@
 
 """Pipecat community integration for GMI Cloud text-to-speech."""
 
-from .tts import GmicloudTTSService, GmicloudTTSSettings
+from .tts import (
+    GmicloudHttpTTSService,
+    GmicloudHttpTTSSettings,
+    model_family,
+)
 
-__all__ = ["GmicloudTTSService", "GmicloudTTSSettings"]
+__all__ = ["GmicloudHttpTTSService", "GmicloudHttpTTSSettings", "model_family"]

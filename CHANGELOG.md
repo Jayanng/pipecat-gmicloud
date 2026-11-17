@@ -6,17 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- `GmicloudTTSService`: Pipecat TTS service for GMI Cloud's inference engine
+- `GmicloudHttpTTSService` (named per Pipecat's HTTP TTS convention):
+  Pipecat TTS service for GMI Cloud's inference engine
   (`POST /api/v1/ie/requestqueue/apikey/requests`).
 - Automatic request-family mapping: Inworld (`voice_id`/`speaking_rate`),
-  MiniMax (`voice_id`/`speed`/`format`/`audio_sample_rate`), Chatterbox
+  MiniMax (`voice_id`/`speed`/`format`), Chatterbox
   (`voice_uuid`/`data`/`output_format`), plus `extra_payload` passthrough.
 - Synchronous and queued responses (`queued`/`dispatched` resolved by polling
   `GET .../requests/{request_id}`).
 - All 17 catalog TTS models covered: Inworld (4), MiniMax (10),
   Chatterbox (1), ElevenLabs catalog entries (2).
-- Settings: model, voice, language, speed (speaking rate), temperature,
-  sample rate (Hz), audio encoding, timestamp type, extra payload.
+- Settings (runtime-updatable): model, voice, language, speed (speaking
+  rate), temperature, timestamp type, extra payload. Constructor params:
+  audio_format, poll interval/attempts.
 - Usage metrics (TTFB and TTS usage) wired to Pipecat's metrics framework.
 - Foundational example: `examples/say-one-thing-gmicloud.py`.
 - Live verification tooling: `scripts/probe_all_models.py` (17-model sweep)

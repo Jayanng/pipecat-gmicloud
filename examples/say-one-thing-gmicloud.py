@@ -34,7 +34,7 @@ from pipecat.transports.livekit.transport import LiveKitParams
 from pipecat.transports.websocket.fastapi import FastAPIWebsocketParams
 from pipecat.workers.runner import WorkerRunner
 
-from pipecat_gmicloud import GmicloudTTSService
+from pipecat_gmicloud import GmicloudHttpTTSService
 
 load_dotenv(override=True)
 
@@ -54,10 +54,10 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments):
 
     # Create an HTTP session
     async with aiohttp.ClientSession() as session:
-        tts = GmicloudTTSService(
+        tts = GmicloudHttpTTSService(
             api_key=os.environ["GMI_CLOUD_API_KEY"],
             aiohttp_session=session,
-            settings=GmicloudTTSService.Settings(
+            settings=GmicloudHttpTTSService.Settings(
                 model="inworld-tts-2",
                 voice="Dennis",
             ),

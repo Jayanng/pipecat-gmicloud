@@ -15,22 +15,25 @@ speaks every documented request family:
   ``inworld-tts-1.5-mini``, ``inworld-tts-1.5-max``): Inworld Realtime TTS,
   282 voices across 200+ languages and locales.
 - **MiniMax** (``minimax-tts-speech-*``): MiniMax speech synthesis
-  (2.8 / 2.6 / 2.5 / 02 / 01 families), with voice, speed, pitch, emotion
-  and sound-effect controls via ``extra_payload``.
-- **Chatterbox** (``Chatterbox-tts``): Resemble AI's Chatterbox model.
-  Requires a Resemble ``voice_uuid`` (set ``voice`` to your voice UUID).
+  (2.8 / 2.6 / 2.5 / 02 / 01 families).
+- **Chatterbox** (``Chatterbox-tts``): Resemble AI's Chatterbox model,
+  which requires a Resemble ``voice_uuid`` (pass it as ``voice``).
 
 Any GMI Cloud audio model id can be used through the ``model`` setting;
-``extra_payload`` passes provider-specific fields through untouched.
+``extra_payload`` passes provider-specific fields through unchanged.
 
 Responses are handled in both documented shapes: synchronous (``outcome``
-returned inline) and queued (``status: queued`` followed by polling
+returned inline) and queued (``queued`` / ``dispatched`` followed by polling
 ``GET /api/v1/ie/requestqueue/apikey/requests/{request_id}``).
 
 All three request families and 17 catalog models were verified against the
 live GMI Cloud API on 2026-11-17 (see ``scripts/probe_all_models.py``):
-14 models produced audio synchronously, and the response resolver handles
-the queued path that Chatterbox-style models use.
+14 models produced audio, and the response resolver handles the queued path
+that MiniMax and Chatterbox-style models use.
+
+Output audio is decoded from the model's WAV response (mono or stereo at the
+model's native rate) and resampled to the pipeline rate as it plays, so no
+sample-rate configuration is required.
 """
 
 import asyncio
@@ -45,17 +48,18 @@ from pipecat.frames.frames import ErrorFrame, Frame
 from pipecat.services.settings import TTSSettings
 from pipecat.services.tts_service import TTSService
 from pipecat.transcriptions.language import Language
+from pipecat.utils.tracing.service_decorators import traced_tts
 from pipecat.utils.types import NOT_GIVEN, NotGiven
 
 
 DEFAULT_URL = "https://console.gmicloud.ai"
 QUEUE_PATH = "/api/v1/ie/requestqueue/apikey/requests"
 
-# Per-family defaults proven against the live API.
+# Per-family request defaults proven against the live API.
 FAMILY_DEFAULTS = {
-    "inworld": {"voice": "Dennis", "sample_rate_hertz": 48000},
-    "minimax": {"voice": "English_expressive_narrator", "sample_rate_hertz": 32000},
-    "chatterbox": {"voice": None, "sample_rate_hertz": 48000},
+    "inworld": {"voice": "Dennis"},
+    "minimax": {"voice": "English_expressive_narrator"},
+    "chatterbox": {"voice": None},
 }
 
 
@@ -70,19 +74,14 @@ def model_family(model: str) -> str:
 
 
 @dataclass
-class GmicloudTTSSettings(TTSSettings):
-    """Settings for :class:`GmicloudTTSService`.
+class GmicloudHttpTTSSettings(TTSSettings):
+    """Settings for :class:`GmicloudHttpTTSService`.
 
     Parameters:
         speed: Speech speed multiplier. Maps to the family's rate control
             (Inworld ``speaking_rate``, MiniMax ``speed``). Defaults to 1.0.
         temperature: Randomness of the synthesis (Inworld family only).
             Left to the model's own default when unset.
-        sample_rate_hertz: Output sample rate in Hz sent to the API. When
-            unset, a per-family default is used (Inworld 48000, MiniMax 32000,
-            Chatterbox 48000).
-        audio_encoding: Output audio container sent to the API (``WAV`` by
-            default; mapped to each family's field name).
         timestamp_type: Optional alignment metadata request (for example
             ``WORD``; Inworld family only).
         extra_payload: Provider-specific payload fields merged into the
@@ -92,13 +91,11 @@ class GmicloudTTSSettings(TTSSettings):
 
     speed: float | NotGiven = field(default_factory=lambda: NOT_GIVEN)
     temperature: float | None | NotGiven = field(default_factory=lambda: NOT_GIVEN)
-    sample_rate_hertz: int | None = field(default=None)
-    audio_encoding: str = field(default="WAV")
     timestamp_type: str | None | NotGiven = field(default_factory=lambda: NOT_GIVEN)
     extra_payload: dict[str, Any] = field(default_factory=dict)
 
 
-class GmicloudTTSService(TTSService):
+class GmicloudHttpTTSService(TTSService):
     """GMI Cloud text-to-speech service.
 
     Synthesizes speech through GMI Cloud's request-queue API
@@ -108,17 +105,17 @@ class GmicloudTTSService(TTSService):
 
     Example::
 
-        tts = GmicloudTTSService(
+        tts = GmicloudHttpTTSService(
             api_key=os.environ["GMI_CLOUD_API_KEY"],
             aiohttp_session=session,
-            settings=GmicloudTTSService.Settings(
+            settings=GmicloudHttpTTSService.Settings(
                 model="inworld-tts-2",
                 voice="Dennis",
             ),
         )
     """
 
-    Settings = GmicloudTTSSettings
+    Settings = GmicloudHttpTTSSettings
 
     def __init__(
         self,
@@ -126,8 +123,7 @@ class GmicloudTTSService(TTSService):
         api_key: str,
         aiohttp_session: aiohttp.ClientSession,
         url: str = DEFAULT_URL,
-        sample_rate: int | None = None,
-        chunk_size: int = 4096,
+        audio_format: str = "WAV",
         poll_interval_secs: float = 2.0,
         poll_attempts: int = 15,
         settings: Settings | None = None,
@@ -139,10 +135,9 @@ class GmicloudTTSService(TTSService):
             api_key: GMI Cloud API key for authentication.
             aiohttp_session: Shared aiohttp session for HTTP requests.
             url: Base URL for the GMI Cloud console API.
-            sample_rate: Pipeline sample rate in Hz, forwarded to the base
-                service (the base resamples frames to the pipeline rate).
-            chunk_size: Byte size of the chunks used to stream the synthesized
-                audio. Defaults to 4096.
+            audio_format: Output container requested from the API. Use a
+                PCM-bearing container (``WAV`` by default) so the service can
+                stream audio frames into the Pipecat pipeline.
             poll_interval_secs: Seconds between status polls for queued
                 generations. Defaults to 2.0.
             poll_attempts: Maximum status polls before giving up.
@@ -156,8 +151,6 @@ class GmicloudTTSService(TTSService):
             language=Language.EN,
             speed=1.0,
             temperature=None,
-            sample_rate_hertz=None,
-            audio_encoding="WAV",
             timestamp_type=None,
         )
 
@@ -165,7 +158,6 @@ class GmicloudTTSService(TTSService):
             default_settings.apply_update(settings)
 
         super().__init__(
-            sample_rate=sample_rate,
             push_stop_frames=True,
             push_start_frame=True,
             settings=default_settings,
@@ -175,12 +167,16 @@ class GmicloudTTSService(TTSService):
         self._api_key = api_key
         self._session = aiohttp_session
         self._base_url = url.rstrip("/")
-        self._chunk_size = chunk_size
+        self._audio_format = audio_format
         self._poll_interval_secs = poll_interval_secs
         self._poll_attempts = poll_attempts
 
     def can_generate_metrics(self) -> bool:
-        """This service supports TTFB and TTS usage metrics."""
+        """Check if this service can generate processing metrics.
+
+        Returns:
+            True, as this service supports metrics.
+        """
         return True
 
     def _build_payload(self, text: str) -> dict[str, Any]:
@@ -188,15 +184,13 @@ class GmicloudTTSService(TTSService):
         family = model_family(self._settings.model)
         defaults = FAMILY_DEFAULTS[family]
         voice = self._settings.voice if self._settings.voice is not None else defaults["voice"]
-        rate = self._settings.sample_rate_hertz or defaults["sample_rate_hertz"]
-        encoding = (self._settings.audio_encoding or "WAV").lower()
+        encoding = (self._audio_format or "WAV").lower()
         speed = self._settings.speed if self._settings.speed is not NOT_GIVEN else 1.0
 
         if family == "inworld":
             payload: dict[str, Any] = {
                 "text": text,
                 "audio_encoding": encoding.upper(),
-                "sample_rate_hertz": rate,
                 "speaking_rate": speed,
             }
             if voice:
@@ -210,7 +204,6 @@ class GmicloudTTSService(TTSService):
                 "text": text,
                 "speed": str(speed),
                 "format": "wav" if encoding == "wav" else encoding,
-                "audio_sample_rate": str(rate),
             }
             if voice:
                 payload["voice_id"] = voice
@@ -218,13 +211,12 @@ class GmicloudTTSService(TTSService):
             if not voice:
                 raise ValueError(
                     "Chatterbox models require a Resemble voice UUID: "
-                    "set GmicloudTTSService.Settings(voice='<your-voice-uuid>')."
+                    "set GmicloudHttpTTSService.Settings(voice='<your-voice-uuid>')."
                 )
             payload = {
                 "data": text,
                 "voice_uuid": voice,
                 "output_format": "wav" if encoding == "wav" else encoding,
-                "sample_rate": rate,
             }
 
         if self._settings.extra_payload:
@@ -271,6 +263,7 @@ class GmicloudTTSService(TTSService):
 
         return data, audio_url
 
+    @traced_tts
     async def run_tts(self, text: str, context_id: str) -> AsyncGenerator[Frame | None, None]:
         """Generate speech from text using GMI Cloud.
 
@@ -291,6 +284,7 @@ class GmicloudTTSService(TTSService):
         try:
             body = {"model": self._settings.model, "payload": self._build_payload(text)}
         except ValueError as e:
+            await self.push_error(str(e), exception=e)
             yield ErrorFrame(error=str(e))
             return
 
@@ -298,9 +292,9 @@ class GmicloudTTSService(TTSService):
             async with self._session.post(url, json=body, headers=headers) as response:
                 if response.status != 200:
                     error_text = await response.text()
-                    yield ErrorFrame(
-                        error=f"GMI Cloud API error: HTTP {response.status} - {error_text}"
-                    )
+                    message = f"GMI Cloud API error: HTTP {response.status} - {error_text}"
+                    await self.push_error(message)
+                    yield ErrorFrame(error=message)
                     return
 
                 data = await response.json()
@@ -308,12 +302,12 @@ class GmicloudTTSService(TTSService):
             data, audio_url = await self._resolve_result(data)
 
             if data.get("status") != "success" or not audio_url:
-                yield ErrorFrame(
-                    error=(
-                        f"GMI Cloud TTS failed: status={data.get('status')!r}, "
-                        f"request_id={data.get('request_id')!r}"
-                    )
+                message = (
+                    f"GMI Cloud TTS failed: status={data.get('status')!r}, "
+                    f"request_id={data.get('request_id')!r}"
                 )
+                await self.push_error(message)
+                yield ErrorFrame(error=message)
                 return
 
             await self.start_tts_usage_metrics(text)
@@ -321,16 +315,16 @@ class GmicloudTTSService(TTSService):
             async with self._session.get(audio_url) as audio_response:
                 if audio_response.status != 200:
                     error_text = await audio_response.text()
-                    yield ErrorFrame(
-                        error=(
-                            "GMI Cloud audio download error: "
-                            f"HTTP {audio_response.status} - {error_text}"
-                        )
+                    message = (
+                        "GMI Cloud audio download error: "
+                        f"HTTP {audio_response.status} - {error_text}"
                     )
+                    await self.push_error(message)
+                    yield ErrorFrame(error=message)
                     return
 
                 async for frame in self._stream_audio_frames_from_iterator(
-                    audio_response.content.iter_chunked(self._chunk_size),
+                    audio_response.content.iter_chunked(4096),
                     strip_wav_header=True,
                     context_id=context_id,
                 ):
@@ -342,6 +336,7 @@ class GmicloudTTSService(TTSService):
             raise
         except Exception as e:
             logger.error(f"{self} exception: {e}")
+            await self.push_error(f"GMI Cloud TTS error: {e}", exception=e)
             yield ErrorFrame(error=f"GMI Cloud TTS error: {e}")
         finally:
             await self.stop_ttfb_metrics()
