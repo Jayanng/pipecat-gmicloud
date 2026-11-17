@@ -225,6 +225,7 @@ class GmicloudHttpTTSService(TTSService):
 
     @staticmethod
     def _extract_audio_url(data: dict[str, Any]) -> str | None:
+        """Extract the first audio URL from a queue response outcome."""
         outcome = data.get("outcome") or {}
         if not isinstance(outcome, dict):
             return None
